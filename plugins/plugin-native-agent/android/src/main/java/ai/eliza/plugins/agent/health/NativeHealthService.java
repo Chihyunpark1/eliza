@@ -5,6 +5,8 @@ import java.util.*;import java.util.concurrent.*;import org.json.JSONObject;
  * permission and actual Messenger sender UID both gate every request. */
 public abstract class NativeHealthService extends Service {
  protected abstract String supervisorPackage();
+ protected abstract long requestBudgetMillis();
+ protected abstract long uiBudgetMillis();
  protected abstract long versionCode();
  protected abstract String distribution();
  protected abstract JSONObject runtimeObservation()throws Exception;
@@ -24,13 +26,13 @@ public abstract class NativeHealthService extends Service {
    Bundle b=message.getData();if(closed||message.what!=1||b.size()!=3||!b.keySet().equals(new HashSet<>(Arrays.asList("nonce","versionCode","deadlineElapsed"))))throw new IllegalArgumentException();
    if(!(b.get("nonce") instanceof String)||!(b.get("versionCode") instanceof Long)||!(b.get("deadlineElapsed") instanceof Long))throw new IllegalArgumentException();
    String nonce=b.getString("nonce");long version=b.getLong("versionCode"),deadline=b.getLong("deadlineElapsed"),now=SystemClock.elapsedRealtime();
-   if(nonce==null||!nonce.matches("[a-f0-9]{64}")||version!=versionCode()||deadline<=now||deadline-now>5000)throw new IllegalArgumentException();
+   if(nonce==null||!nonce.matches("[a-f0-9]{64}")||version!=versionCode()||deadline<=now||requestBudgetMillis()<=0||uiBudgetMillis()<=0||deadline-now>requestBudgetMillis())throw new IllegalArgumentException();
    worker.execute(()->{
     try{
      if(closed||SystemClock.elapsedRealtime()>=deadline)return;
      JSONObject value=runtimeObservation().put("schemaVersion",5).put("nonce",nonce).put("versionCode",versionCode()).put("distribution",distribution());
      checkStorage(deadline);value.put("diagnosticStorageResponsive",true);
-     JSONObject ui=uiObservation(Math.min(deadline,SystemClock.elapsedRealtime()+1500));
+     JSONObject ui=uiObservation(Math.min(deadline,Math.addExact(SystemClock.elapsedRealtime(),uiBudgetMillis())));
      for(String key:new String[]{"activityState","rendererResponsive","contentPresent"})value.put(key,ui.get(key));
      if(!runtimeUnchanged(value))throw new java.io.IOException("Runtime changed during UI observation");
      long observed=SystemClock.elapsedRealtime();if(closed||observed>=deadline)return;value.put("observedElapsed",observed);reply(destination,200,value.toString());

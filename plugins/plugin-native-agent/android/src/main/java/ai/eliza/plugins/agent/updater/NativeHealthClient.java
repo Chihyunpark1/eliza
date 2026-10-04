@@ -4,13 +4,14 @@ import android.content.*;import android.content.pm.*;import android.os.*;import 
 /** Fresh native runtime observations only; never marks journal health. Call off
  * the main thread. Expected installed identity is read before and after IPC. */
 public final class NativeHealthClient {
- public static JSONObject read(Context context,String target,String serviceClass,String distributionKey)throws Exception {
+ public static JSONObject read(Context context,String target,String serviceClass,String distributionKey,long requestBudgetMillis)throws Exception {
+  if(requestBudgetMillis<=0)throw new IllegalArgumentException("Positive host health request budget required");
   if(Looper.myLooper()==Looper.getMainLooper())throw new IOException("Health probe cannot block main thread");
   java.util.Objects.requireNonNull(target);java.util.Objects.requireNonNull(serviceClass);java.util.Objects.requireNonNull(distributionKey);PackageManager pm=context.getPackageManager();
   if(pm.checkSignatures(context.getPackageName(),target)!=PackageManager.SIGNATURE_MATCH)throw new IOException("Health peer signer mismatch");
   UpdateJournal.Identity before=PackageInstallCoordinator.installed(context,target);int expectedUid=pm.getApplicationInfo(target,0).uid;
   byte[] random=new byte[32];new SecureRandom().nextBytes(random);StringBuilder text=new StringBuilder();for(byte b:random)text.append(String.format(Locale.ROOT,"%02x",b&255));String nonce=text.toString();
-  long started=SystemClock.elapsedRealtime(),deadline=started+5000;CompletableFuture<IBinder> connection=new CompletableFuture<>();CompletableFuture<JSONObject> response=new CompletableFuture<>();
+  long started=SystemClock.elapsedRealtime(),deadline=Math.addExact(started,requestBudgetMillis);CompletableFuture<IBinder> connection=new CompletableFuture<>();CompletableFuture<JSONObject> response=new CompletableFuture<>();
   HandlerThread thread=new HandlerThread("SupervisorHealthReply");thread.start();
   Messenger replies=new Messenger(new Handler(thread.getLooper(),m->{
    try{

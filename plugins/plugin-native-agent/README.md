@@ -75,8 +75,9 @@ provisions a default trust/time authority.
 `NativeHealthService`, `NativeHealthEvidence` and updater `NativeHealthClient`
 share the authenticated native health-observation exchange: signature/UID checks,
 nonce/version/deadline binding, bounded worker admission, installed identity
-rechecks and strict observation consistency. Hosts provide component identities
-and runtime/storage/UI observation ports. Reports are observations only; these
+rechecks and strict observation consistency. Hosts provide component identities, positive request/UI time budgets
+and runtime/storage/UI observation ports. Client and service request budgets must
+agree; the client enforces its absolute deadline independently of the service. Reports are observations only; these
 classes never mark a journal healthy or authorize recovery.
 
 `ReconciliationScheduler` persists local package-readback jobs without network,
