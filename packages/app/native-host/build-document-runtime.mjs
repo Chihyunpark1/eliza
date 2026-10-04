@@ -24,7 +24,7 @@ export function buildDocumentRuntime(
   if (
     !/^[a-f0-9]{40}$/.test(sourceCommit) ||
     commit !== sourceCommit ||
-    git(["status", "--porcelain", "--untracked-files=no"])
+    git(["status", "--porcelain", "--untracked-files=normal"])
   )
     throw new NativeHostError(
       "Document runtime requires the clean reviewed source commit",
