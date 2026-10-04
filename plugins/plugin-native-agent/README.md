@@ -78,3 +78,10 @@ nonce/version/deadline binding, bounded worker admission, installed identity
 rechecks and strict observation consistency. Hosts provide component identities
 and runtime/storage/UI observation ports. Reports are observations only; these
 classes never mark a journal healthy or authorize recovery.
+
+`ReconciliationScheduler` persists local package-readback jobs without network,
+charging or idle constraints. Hosts supply job IDs and the declared service.
+`ReconciliationJobService` owns bounded workers and cancellation/late-completion
+fencing; hosts bind the readback operation. Neither component initiates an
+installation. Qualify actual Android job dispatch and reboot persistence in the
+host alongside its install/recovery tests.
