@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 
 const HASH_IDENTITY_ENFORCEMENT_TAG =
   "0194_job_execution_interruptions_catalog_guard";
-// Bind the journal to this checkout even when a caller runs from an isolated cwd.
+// Bind deployment evidence to this checkout, including isolated CI working directories.
 const MIGRATIONS_DIR = fileURLToPath(
   new URL("../../shared/src/db/migrations/", import.meta.url),
 );
